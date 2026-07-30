@@ -144,6 +144,7 @@ export function startDashboardServer(config: SmartContextConfig, storage: Storag
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Smart Context MCP — Universal Dashboard</title>
+        <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧠</text></svg>">
         <style>
           :root {
             --bg-color: #0b0f19;
@@ -493,7 +494,7 @@ export function startDashboardServer(config: SmartContextConfig, storage: Storag
                   <option value="all">All Projects</option>
                 </select>
               </div>
-              <button class="header-btn" onclick="openModal('testModal')">🧪 Test Low AI</button>
+              <button class="header-btn" onclick="openModal('testModal')">⚡ Test Connection</button>
               <button class="header-btn" onclick="openModal('settingsModal')">⚙️ Settings</button>
               <button class="header-btn" onclick="openModal('guideModal')">❓ Guide</button>
               <span class="badge">Online</span>
@@ -578,21 +579,21 @@ export function startDashboardServer(config: SmartContextConfig, storage: Storag
           </div>
         </div>
 
-        <!-- 🧪 Test Low AI Modal Dialog -->
+        <!-- ⚡ Test Connection Modal Dialog -->
         <div class="modal-overlay" id="testModal">
           <div class="modal-card">
             <div class="modal-header">
-              <h2>🧪 Test Low AI Intent Analysis</h2>
+              <h2>⚡ Test Low AI Provider Connection & Simulation</h2>
               <button class="close-btn" onclick="closeModal('testModal')">&times;</button>
             </div>
             <form id="testForm">
               <div class="form-group">
-                <label>Sample User Coding Prompt <span class="tooltip-icon" data-tooltip="Enter any coding request to test how the Low AI Model analyzes user intent and extracts target symbols.">?</span></label>
+                <label>Test Sample Prompt <span class="tooltip-icon" data-tooltip="Tests connection to your configured Low AI API (Ollama/Groq/Claude/Gemini) and verifies prompt intent extraction & live token recording.">?</span></label>
                 <textarea id="testPromptInput" rows="3" placeholder="e.g. Refactor database connection pool and fix SQL query performance in src/storage/db.ts"></textarea>
               </div>
               <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1rem;">
                 <button type="button" class="tab-btn" onclick="closeModal('testModal')">Cancel</button>
-                <button type="submit" class="btn-primary">Analyze Prompt</button>
+                <button type="submit" class="btn-primary">Test Connection & Analyze</button>
               </div>
             </form>
             <div id="testResultBox" class="result-box" style="display: none;"></div>
