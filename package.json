@@ -1,0 +1,40 @@
+{
+  "name": "smart-context-mcp",
+  "version": "1.0.0",
+  "description": "Universal Context Engine MCP Server for AI Coding Agents",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --clean --dts",
+    "dev": "tsx src/index.ts",
+    "start": "node dist/index.js",
+    "release": "bash scripts/release.sh",
+    "lint": "tsc --noEmit"
+  },
+  "keywords": [
+    "mcp",
+    "smart-context",
+    "context-engine",
+    "llm",
+    "tree-sitter"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.1",
+    "better-sqlite3": "^11.3.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "web-tree-sitter": "^0.22.6"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.11",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/node": "^20.17.0",
+    "tsup": "^8.3.5",
+    "tsx": "^4.19.1",
+    "typescript": "^5.6.3"
+  }
+}

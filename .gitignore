@@ -1,0 +1,17 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+
+# SQLite & Cache files
+*.db
+*.db-journal
+.cache/
+
+# Environment & OS
+.env
+.DS_Store
+
+# AI Docs
+docs/
