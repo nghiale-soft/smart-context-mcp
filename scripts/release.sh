@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -e
 
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+PROJECT_ROOT="$( cd "${SCRIPT_DIR}/.." >/dev/null 2>&1 && pwd )"
+cd "${PROJECT_ROOT}"
+
 echo "📦 Packaging Smart Context MCP Release..."
 
 # 1. Build TypeScript ESM output
@@ -37,9 +41,6 @@ chmod +x "${BUNDLE_DIR}/smart-context-mcp"
 # 5. Zip bundle into release/smart-context-mcp-v1.0.0.zip
 cd "${RELEASE_DIR}"
 zip -r "smart-context-mcp-v1.0.0.zip" "smart-context-mcp-release" > /dev/null
-
-# 6. Clean up temporary unzipped folder so ONLY the zip file remains in release/
-rm -rf "smart-context-mcp-release"
 cd ..
 
 echo "✅ Pre-built release package created at: ${RELEASE_DIR}/smart-context-mcp-v1.0.0.zip"

@@ -1,4 +1,5 @@
 import { SmartContextConfig } from '../config/index.js';
+import { safeFetch } from '../utils/fetch.js';
 
 export interface IntentAnalysisResult {
   keywords: string[];
@@ -43,7 +44,7 @@ export async function analyzeIntent(prompt: string, config: SmartContextConfig):
         headers['x-api-key'] = 'ollama';
       }
 
-      const response = await fetch(endpoint, {
+      const response = await safeFetch(endpoint, {
         method: 'POST',
         headers,
         body: JSON.stringify({
@@ -67,7 +68,7 @@ export async function analyzeIntent(prompt: string, config: SmartContextConfig):
     // Case 2: OpenAI Compatible Format (Groq, OpenAI, LocalAI)
     else if (provider.includes('openai') || provider.includes('groq')) {
       const endpoint = baseUrl.endsWith('/v1/chat/completions') ? baseUrl : `${baseUrl}/v1/chat/completions`;
-      const response = await fetch(endpoint, {
+      const response = await safeFetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Context MCP — Universal Dashboard</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='46' fill='%230f172a' stroke='%2338bdf8' stroke-width='4'/%3E%3Cpath d='M 28 28 L 38 40 L 26 44 Z' fill='%2338bdf8'/%3E%3Cpath d='M 72 28 L 62 40 L 74 44 Z' fill='%2338bdf8'/%3E%3Cpath d='M 26 44 C 26 30 74 30 74 44 C 74 72 65 82 50 82 C 35 82 26 72 26 44 Z' fill='%231e293b' stroke='%23818cf8' stroke-width='2.5'/%3E%3Ccircle cx='38' cy='50' r='11' fill='%230b0f19' stroke='%2338bdf8' stroke-width='3'/%3E%3Ccircle cx='38' cy='50' r='4.5' fill='%2338bdf8'/%3E%3Ccircle cx='62' cy='50' r='11' fill='%230b0f19' stroke='%2338bdf8' stroke-width='3'/%3E%3Ccircle cx='62' cy='50' r='4.5' fill='%2338bdf8'/%3E%3Ccircle cx='40' cy='48' r='1.5' fill='%23ffffff'/%3E%3Ccircle cx='64' cy='48' r='1.5' fill='%23ffffff'/%3E%3Cpolygon points='50,56 44,64 56,64' fill='%23f59e0b'/%3E%3Cpath d='M 42 70 Q 50 74 58 70 M 44 75 Q 50 78 56 75' stroke='%23818cf8' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand-title">
+        <img class="brand-icon" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='46' fill='%230f172a' stroke='%2338bdf8' stroke-width='4'/%3E%3Cpath d='M 28 28 L 38 40 L 26 44 Z' fill='%2338bdf8'/%3E%3Cpath d='M 72 28 L 62 40 L 74 44 Z' fill='%2338bdf8'/%3E%3Cpath d='M 26 44 C 26 30 74 30 74 44 C 74 72 65 82 50 82 C 35 82 26 72 26 44 Z' fill='%231e293b' stroke='%23818cf8' stroke-width='2.5'/%3E%3Ccircle cx='38' cy='50' r='11' fill='%230b0f19' stroke='%2338bdf8' stroke-width='3'/%3E%3Ccircle cx='38' cy='50' r='4.5' fill='%2338bdf8'/%3E%3Ccircle cx='62' cy='50' r='11' fill='%230b0f19' stroke='%2338bdf8' stroke-width='3'/%3E%3Ccircle cx='62' cy='50' r='4.5' fill='%2338bdf8'/%3E%3Ccircle cx='40' cy='48' r='1.5' fill='%23ffffff'/%3E%3Ccircle cx='64' cy='48' r='1.5' fill='%23ffffff'/%3E%3Cpolygon points='50,56 44,64 56,64' fill='%23f59e0b'/%3E%3Cpath d='M 42 70 Q 50 74 58 70 M 44 75 Q 50 78 56 75' stroke='%23818cf8' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E" alt="Smart Context Owl Mascot" />
+        <div>
+          <h1>Smart Context MCP Server</h1>
+          <div class="subtitle">Universal Context Engine & Local SQLite Explorer</div>
+        </div>
+      </div>
+      <div class="header-actions">
+        <div class="project-select-box">
+          <label>Project:</label>
+          <select id="projectSelect" onchange="onProjectChange()">
+            <option value="all" selected>All Projects</option>
+          </select>
+        </div>
+        <button class="header-btn" onclick="openModal('settingsModal')">⚙️ Settings & AI Setup</button>
+        <button class="header-btn" onclick="openModal('guideModal')">❓ Guide</button>
+      </div>
+    </header>
+
+    <div class="grid-4">
+      <div class="stat-card">
+        <div class="stat-val" id="fileCount">-</div>
+        <div class="stat-lbl">
+          Cached Files
+          <span class="tooltip-icon" data-tooltip="Total source code files scanned across your repository workspace and cached in local SQLite database.">?</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" id="symbolCount">-</div>
+        <div class="stat-lbl">
+          Parsed Symbols
+          <span class="tooltip-icon" data-tooltip="Total functions, classes, methods, interfaces, and types extracted from source code AST using Tree-sitter parsing.">?</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" id="totalPrompts">-</div>
+        <div class="stat-lbl">
+          Filtered Prompts
+          <span class="tooltip-icon" data-tooltip="Number of user prompts processed by Low AI intent analyzer to extract relevant code context. Increments when AI Agent calls MCP get_smart_context or via Test Connection.">?</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" id="totalTokens">-</div>
+        <div class="stat-lbl">
+          Low AI Tokens
+          <span class="tooltip-icon" data-tooltip="Total token usage consumed by cheap/fast Low AI model during prompt intent and keyword analysis. Recorded live in SQLite database.">?</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>📦 SQLite Local Cache Explorer</h2>
+      <div class="tabs">
+        <button class="tab-btn active" id="tabFiles" onclick="switchTab('files')">Files Cache</button>
+        <button class="tab-btn" id="tabSymbols" onclick="switchTab('symbols')">Symbols AST</button>
+      </div>
+      <div id="filesView">
+        <table>
+          <thead>
+            <tr>
+              <th>ID <span class="tooltip-icon" data-tooltip="Unique index ID generated by SQLite for this cached file record. Used internally for fast relational joins.">?</span></th>
+              <th>Project <span class="tooltip-icon" data-tooltip="The repository workspace name where this source file belongs. Enables multi-project workspace index management.">?</span></th>
+              <th>File Path <span class="tooltip-icon" data-tooltip="Relative file path from project root. Used by Context Builder to pull exact source code blocks.">?</span></th>
+              <th>Language <span class="tooltip-icon" data-tooltip="Source programming language detected by file extension (TypeScript, Python, Go, Rust, Java...)">?</span></th>
+              <th>Symbols <span class="tooltip-icon" data-tooltip="Total AST code symbols (functions, classes, methods, interfaces) extracted by Tree-sitter parser for this file.">?</span></th>
+            </tr>
+          </thead>
+          <tbody id="filesTableBody">
+            <tr><td colspan="5">Loading SQLite cached files...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div id="symbolsView" style="display: none;">
+        <table>
+          <thead>
+            <tr>
+              <th>Symbol Name <span class="tooltip-icon" data-tooltip="The exact identifier name of the function, class, method, or interface extracted from source code AST.">?</span></th>
+              <th>Kind <span class="tooltip-icon" data-tooltip="AST Symbol category (class, function, interface, variable, type) used by Ranking Engine to filter relevant context.">?</span></th>
+              <th>Line <span class="tooltip-icon" data-tooltip="Exact line number in the source file where this symbol definition begins.">?</span></th>
+              <th>File Path <span class="tooltip-icon" data-tooltip="Relative file path containing this symbol definition.">?</span></th>
+              <th>Project <span class="tooltip-icon" data-tooltip="Target repository project workspace name containing this symbol.">?</span></th>
+            </tr>
+          </thead>
+          <tbody id="symbolsTableBody">
+            <tr><td colspan="5">Loading SQLite AST symbols...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="settingsModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2>⚙️ Global Low AI & Provider Configuration</h2>
+        <button class="close-btn" onclick="closeModal('settingsModal')">&times;</button>
+      </div>
+      <form id="configForm">
+        <div class="form-group">
+          <label>Low AI Provider <span class="tooltip-icon" data-tooltip="Select the cheap/fast AI service (local Ollama, Groq, Claude, Gemini) used to analyze user intent without wasting main LLM tokens.">?</span></label>
+          <select id="lowAiProvider">
+            <option value="anthropic">Anthropic (Claude API / Ollama Local)</option>
+            <option value="openai">OpenAI (Codex / GPT-4o)</option>
+            <option value="groq">Groq Cloud (Llama 3.3 70B)</option>
+            <option value="gemini">Google Gemini Flash</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Low AI Model Name <span class="tooltip-icon" data-tooltip="The model identifier name to invoke for prompt intent analysis (e.g. nemotron-3-super:cloud, llama-3.3-70b-versatile, claude-3-5-sonnet).">?</span></label>
+          <input type="text" id="lowAiModel" placeholder="e.g. nemotron-3-super:cloud, llama-3.3-70b-versatile" />
+        </div>
+        <div class="form-group">
+          <label>Low AI Base URL <span class="tooltip-icon" data-tooltip="Base HTTP endpoint URL for the Low AI API service (e.g. http://localhost:11434 for local Ollama, https://api.groq.com/openai for Groq).">?</span></label>
+          <input type="text" id="lowAiBaseUrl" placeholder="e.g. http://localhost:11434 or https://api.groq.com/openai" />
+        </div>
+        <div class="form-group">
+          <label>Low AI Auth Token / API Key <span class="tooltip-icon" data-tooltip="Authorization Bearer token or API Key required to authenticate requests to the Low AI endpoint.">?</span></label>
+          <input type="password" id="lowAiApiKey" placeholder="ollama / gsk_... / sk-..." />
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem;">
+          <button type="button" class="btn-secondary" onclick="testConnectionFromSettings()">⚡ Test Connection</button>
+          <div style="display: flex; gap: 0.75rem;">
+            <button type="button" class="tab-btn" onclick="closeModal('settingsModal')">Cancel</button>
+            <button type="submit" class="btn-primary">Save Settings</button>
+          </div>
+        </div>
+      </form>
+      <div id="settingsTestResult" class="result-box" style="display: none;"></div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="guideModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2>❓ Smart Context MCP — Dashboard User Guide</h2>
+        <button class="close-btn" onclick="closeModal('guideModal')">&times;</button>
+      </div>
+      <div class="guide-section">
+        <h3>🚀 What is Smart Context MCP?</h3>
+        <p>Smart Context MCP is a local Universal Context Engine running as a Model Context Protocol (MCP) server. It reduces main LLM token consumption by 50%–70% by extracting only relevant code AST symbols and workspace Git Delta changes.</p>
+      </div>
+      <div class="guide-section">
+        <h3>🤖 How Low AI Provider Works</h3>
+        <p>When an AI Coding Agent makes a prompt request, Smart Context MCP routes the prompt through a cheap/fast <b>Low AI Model</b> (e.g., local Ollama Nemotron, Groq, or Gemini Flash) to analyze user intent and extract target code keywords without wasting expensive main LLM tokens.</p>
+      </div>
+      <div class="guide-section">
+        <h3>📦 SQLite Local Cache Explorer</h3>
+        <ul>
+          <li><b>Files Cache:</b> Shows all repository source files scanned and stored locally in SQLite (<code>cache.db</code>).</li>
+          <li><b>Symbols AST:</b> Displays all functions, classes, methods, interfaces, and types extracted via Tree-sitter parsing.</li>
+          <li><b>Project Selector:</b> Use the top-right dropdown to filter statistics and SQLite cache tables by specific project workspaces.</li>
+        </ul>
+      </div>
+      <div class="guide-section">
+        <h3>🔌 MCP Client Configuration</h3>
+        <p>Add the following server config to your AI Client (<code>mcp_settings.json</code> or VS Code <code>mcp.json</code>):</p>
+        <pre><code>{
+  "mcpServers": {
+    "smart-context": {
+      "command": "/path/to/unzipped/smart-context-mcp-release/smart-context-mcp",
+      "args": []
+    }
+  }
+}</code></pre>
+      </div>
+      <div style="display: flex; justify-content: flex-end; margin-top: 1.5rem;">
+        <button type="button" class="btn-primary" onclick="closeModal('guideModal')">Got it!</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

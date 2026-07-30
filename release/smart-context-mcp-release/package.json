@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "type": "module",
   "scripts": {
-    "build": "tsup src/index.ts --format esm --clean --dts",
+    "build": "tsup src/index.ts --format esm --clean --dts && rm -rf dist/static && mkdir -p dist/static && cp -R src/dashboard/static/. dist/static",
     "dev": "tsx src/index.ts",
     "start": "node dist/index.js",
     "release": "bash scripts/release.sh",
