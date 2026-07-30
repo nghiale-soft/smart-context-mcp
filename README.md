@@ -4,6 +4,8 @@
 
 It reduces token consumption for powerful LLMs (Strong LLMs) by **50%–70%** by intelligently filtering code context, tracking Git Delta changes, and building high-performance local indexes using **SQLite** and **Tree-sitter AST parsing**.
 
+Built following the [ai-read-first](https://github.com/nghiale-soft/ai-read-first) specification & architecture principles for AI-assisted software development.
+
 ---
 
 ## 🌟 Key Features
@@ -34,7 +36,7 @@ Smart Context MCP persists user settings and indexed workspace data locally in y
 
 End-users do **not** need to install Node.js build tools or run `npm`:
 
-1. Download the pre-built release package: `smart-context-mcp-v1.0.0.zip` (from `release/` folder or GitHub Releases).
+1. Download the pre-built release package: [`smart-context-mcp-v1.0.0.zip`](release/smart-context-mcp-v1.0.0.zip) (from the [`release/`](release/) folder or GitHub Releases).
 2. Unzip `smart-context-mcp-v1.0.0.zip` into your desired folder.
 3. Configure your AI Client to point to the executable launcher `smart-context-mcp`:
 
