@@ -36,7 +36,7 @@ Smart Context MCP persists user settings and indexed workspace data locally in y
 
 End-users do **not** need to install Node.js build tools or run `npm`:
 
-1. Download the pre-built release package: `smart-context-mcp-v1.0.0.zip` (from `release/` folder or GitHub Releases).
+1. Download the pre-built release package: [`smart-context-mcp-v1.0.0.zip`](release/smart-context-mcp-v1.0.0.zip) (from the [`release/`](release/) folder or GitHub Releases).
 2. Unzip `smart-context-mcp-v1.0.0.zip` into your desired folder.
 3. Configure your AI Client to point to the executable launcher `smart-context-mcp`:
 

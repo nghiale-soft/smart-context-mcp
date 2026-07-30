@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import { SmartContextConfig, saveConfig, loadConfig } from '../config/index.js';
 import { StorageManager } from '../storage/db.js';
+import { analyzeIntent } from '../ai/intent.js';
 
 export function startDashboardServer(config: SmartContextConfig, storage: StorageManager) {
   const app = express();
@@ -107,7 +108,34 @@ export function startDashboardServer(config: SmartContextConfig, storage: Storag
     });
   });
 
-  // 100% English Glassmorphism Dashboard with Detailed Tooltips & Compact Select Box
+  // API Test Low AI Prompt Simulation
+  app.post('/api/test-prompt', async (req, res) => {
+    try {
+      const { prompt, project } = req.body;
+      if (!prompt) {
+        return res.status(400).json({ success: false, error: 'Prompt is required' });
+      }
+
+      const projectName = project || 'smart-context-mcp';
+      const currentConfig = loadConfig();
+      const result = await analyzeIntent(prompt, currentConfig);
+      
+      // Calculate token count and record metric into SQLite
+      const estimatedTokens = Math.ceil((prompt.length + JSON.stringify(result).length) / 4) + 15;
+      storage.recordMetric(prompt, projectName, estimatedTokens);
+
+      res.json({
+        success: true,
+        result,
+        tokensUsed: estimatedTokens,
+        projectName
+      });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  // 100% English Glassmorphism Dashboard with Detailed Tooltips & Low AI Simulator
   app.get('/', (req, res) => {
     res.send(`
       <!DOCTYPE html>
@@ -229,6 +257,7 @@ export function startDashboardServer(config: SmartContextConfig, storage: Storag
             border-radius: 12px;
             padding: 1.25rem;
             text-align: center;
+            position: relative;
           }
           .stat-val {
             font-size: 1.8rem;
@@ -241,6 +270,9 @@ export function startDashboardServer(config: SmartContextConfig, storage: Storag
             color: var(--text-muted);
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
           }
           .card {
             background: var(--card-bg);
@@ -388,7 +420,7 @@ export function startDashboardServer(config: SmartContextConfig, storage: Storag
             font-size: 0.85rem;
             color: var(--text-muted);
           }
-          input, select {
+          input, select, textarea {
             width: 100%;
             padding: 0.75rem;
             background: #0b0f19;
@@ -397,6 +429,7 @@ export function startDashboardServer(config: SmartContextConfig, storage: Storag
             color: #fff;
             box-sizing: border-box;
             font-size: 0.9rem;
+            font-family: inherit;
           }
           .btn-primary {
             background: var(--primary);
@@ -433,6 +466,17 @@ export function startDashboardServer(config: SmartContextConfig, storage: Storag
             border-radius: 4px;
             font-size: 0.82rem;
           }
+          .result-box {
+            background: #0b0f19;
+            border: 1px solid var(--border);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+            font-size: 0.85rem;
+            max-height: 180px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+          }
         </style>
       </head>
       <body>
@@ -449,29 +493,42 @@ export function startDashboardServer(config: SmartContextConfig, storage: Storag
                   <option value="all">All Projects</option>
                 </select>
               </div>
+              <button class="header-btn" onclick="openModal('testModal')">🧪 Test Low AI</button>
               <button class="header-btn" onclick="openModal('settingsModal')">⚙️ Settings</button>
               <button class="header-btn" onclick="openModal('guideModal')">❓ Guide</button>
               <span class="badge">Online</span>
             </div>
           </header>
 
-          <!-- KPI Metrics Grid -->
+          <!-- KPI Metrics Grid with Tooltips -->
           <div class="grid-4">
             <div class="stat-card">
               <div class="stat-val" id="fileCount">-</div>
-              <div class="stat-lbl">Cached Files</div>
+              <div class="stat-lbl">
+                Cached Files
+                <span class="tooltip-icon" data-tooltip="Total source code files scanned across your repository workspace and cached in local SQLite database.">?</span>
+              </div>
             </div>
             <div class="stat-card">
               <div class="stat-val" id="symbolCount">-</div>
-              <div class="stat-lbl">Parsed Symbols</div>
+              <div class="stat-lbl">
+                Parsed Symbols
+                <span class="tooltip-icon" data-tooltip="Total functions, classes, methods, interfaces, and types extracted from source code AST using Tree-sitter parsing.">?</span>
+              </div>
             </div>
             <div class="stat-card">
               <div class="stat-val" id="totalPrompts">-</div>
-              <div class="stat-lbl">Filtered Prompts</div>
+              <div class="stat-lbl">
+                Filtered Prompts
+                <span class="tooltip-icon" data-tooltip="Number of user prompts processed by Low AI intent analyzer to extract relevant code context. Increments when AI Agent calls MCP get_smart_context or via Test Low AI.">?</span>
+              </div>
             </div>
             <div class="stat-card">
               <div class="stat-val" id="totalTokens">-</div>
-              <div class="stat-lbl">Low AI Tokens</div>
+              <div class="stat-lbl">
+                Low AI Tokens
+                <span class="tooltip-icon" data-tooltip="Total token usage consumed by cheap/fast Low AI model during prompt intent and keyword analysis. Recorded live in SQLite database.">?</span>
+              </div>
             </div>
           </div>
 
@@ -518,6 +575,27 @@ export function startDashboardServer(config: SmartContextConfig, storage: Storag
                 </tbody>
               </table>
             </div>
+          </div>
+        </div>
+
+        <!-- 🧪 Test Low AI Modal Dialog -->
+        <div class="modal-overlay" id="testModal">
+          <div class="modal-card">
+            <div class="modal-header">
+              <h2>🧪 Test Low AI Intent Analysis</h2>
+              <button class="close-btn" onclick="closeModal('testModal')">&times;</button>
+            </div>
+            <form id="testForm">
+              <div class="form-group">
+                <label>Sample User Coding Prompt <span class="tooltip-icon" data-tooltip="Enter any coding request to test how the Low AI Model analyzes user intent and extracts target symbols.">?</span></label>
+                <textarea id="testPromptInput" rows="3" placeholder="e.g. Refactor database connection pool and fix SQL query performance in src/storage/db.ts"></textarea>
+              </div>
+              <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1rem;">
+                <button type="button" class="tab-btn" onclick="closeModal('testModal')">Cancel</button>
+                <button type="submit" class="btn-primary">Analyze Prompt</button>
+              </div>
+            </form>
+            <div id="testResultBox" class="result-box" style="display: none;"></div>
           </div>
         </div>
 
@@ -590,9 +668,9 @@ export function startDashboardServer(config: SmartContextConfig, storage: Storag
               <p>Add the following server config to your AI Client (<code>mcp_settings.json</code>):</p>
               <pre><code>{
   "mcpServers": {
-    "smart-context-mcp": {
-      "command": "node",
-      "args": ["/absolute/path/to/smart-context-mcp/dist/index.js"]
+    "smart-context": {
+      "command": "/path/to/unzipped/smart-context-mcp-release/smart-context-mcp",
+      "args": []
     }
   }
 }</code></pre>
@@ -730,6 +808,34 @@ export function startDashboardServer(config: SmartContextConfig, storage: Storag
             alert('Configuration saved successfully!');
             closeModal('settingsModal');
             loadConfig();
+          });
+
+          document.getElementById('testForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const prompt = document.getElementById('testPromptInput').value;
+            const resultBox = document.getElementById('testResultBox');
+            resultBox.style.display = 'block';
+            resultBox.innerText = 'Analyzing prompt with Low AI model...';
+
+            try {
+              const res = await fetch('/api/test-prompt', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  prompt,
+                  project: currentProject === 'all' ? 'smart-context-mcp' : currentProject
+                })
+              });
+              const data = await res.json();
+              if (data.success) {
+                resultBox.innerText = '✅ Analysis Result:\n' + JSON.stringify(data.result, null, 2) + '\n\nTokens Used: ' + data.tokensUsed;
+                loadStats();
+              } else {
+                resultBox.innerText = '❌ Error: ' + data.error;
+              }
+            } catch (err) {
+              resultBox.innerText = '❌ Request failed: ' + err.message;
+            }
           });
 
           async function init() {
