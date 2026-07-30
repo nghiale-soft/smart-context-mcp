@@ -27,7 +27,7 @@ export function startDashboardServer(config: SmartContextConfig, storage: Storag
   // API Get Distinct Projects
   app.get('/api/projects', (req, res) => {
     const db = storage.getDb();
-    const projects = db.prepare('SELECT DISTINCT project_name FROM files ORDER BY project_name ASC').all();
+    const projects = db.prepare('SELECT DISTINCT project_name FROM files WHERE project_name IS NOT NULL ORDER BY project_name ASC').all();
     res.json(projects.map((p: any) => p.project_name));
   });
 
@@ -108,21 +108,25 @@ export function startDashboardServer(config: SmartContextConfig, storage: Storag
     });
   });
 
-  // API Test Low AI Prompt Simulation
+  // API Test Low AI Prompt Simulation & Connection Test
   app.post('/api/test-prompt', async (req, res) => {
     try {
-      const { prompt, project } = req.body;
-      if (!prompt) {
-        return res.status(400).json({ success: false, error: 'Prompt is required' });
-      }
+      const { prompt, project, configOverride } = req.body;
+      const testPrompt = prompt || 'Test connection intent analysis';
 
-      const projectName = project || 'smart-context-mcp';
-      const currentConfig = loadConfig();
-      const result = await analyzeIntent(prompt, currentConfig);
+      const projectName = (project && project !== 'all') ? project : 'smart-context-mcp';
+      const currentConfig = configOverride ? { ...loadConfig(), ...configOverride } : loadConfig();
+      const result = await analyzeIntent(testPrompt, currentConfig);
       
       // Calculate token count and record metric into SQLite
-      const estimatedTokens = Math.ceil((prompt.length + JSON.stringify(result).length) / 4) + 15;
-      storage.recordMetric(prompt, projectName, estimatedTokens);
+      const estimatedTokens = Math.ceil((testPrompt.length + JSON.stringify(result).length) / 4) + 15;
+      storage.recordMetric(
+        projectName,
+        testPrompt,
+        currentConfig.lowAiModel || '',
+        estimatedTokens,
+        result.keywords ? result.keywords.length : 0
+      );
 
       res.json({
         success: true,
@@ -135,8 +139,10 @@ export function startDashboardServer(config: SmartContextConfig, storage: Storag
     }
   });
 
-  // 100% English Glassmorphism Dashboard with Detailed Tooltips & Low AI Simulator
+  // Glassmorphism Dashboard with Cyber Owl Mascot & Settings Connection Test Integration
   app.get('/', (req, res) => {
+    const owlSvg = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='46' fill='%230f172a' stroke='%2338bdf8' stroke-width='4'/%3E%3Cpath d='M 28 28 L 38 40 L 26 44 Z' fill='%2338bdf8'/%3E%3Cpath d='M 72 28 L 62 40 L 74 44 Z' fill='%2338bdf8'/%3E%3Cpath d='M 26 44 C 26 30 74 30 74 44 C 74 72 65 82 50 82 C 35 82 26 72 26 44 Z' fill='%231e293b' stroke='%23818cf8' stroke-width='2.5'/%3E%3Ccircle cx='38' cy='50' r='11' fill='%230b0f19' stroke='%2338bdf8' stroke-width='3'/%3E%3Ccircle cx='38' cy='50' r='4.5' fill='%2338bdf8'/%3E%3Ccircle cx='62' cy='50' r='11' fill='%230b0f19' stroke='%2338bdf8' stroke-width='3'/%3E%3Ccircle cx='62' cy='50' r='4.5' fill='%2338bdf8'/%3E%3Ccircle cx='40' cy='48' r='1.5' fill='%23ffffff'/%3E%3Ccircle cx='64' cy='48' r='1.5' fill='%23ffffff'/%3E%3Cpolygon points='50,56 44,64 56,64' fill='%23f59e0b'/%3E%3Cpath d='M 42 70 Q 50 74 58 70 M 44 75 Q 50 78 56 75' stroke='%23818cf8' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E`;
+
     res.send(`
       <!DOCTYPE html>
       <html lang="en">
@@ -144,7 +150,7 @@ export function startDashboardServer(config: SmartContextConfig, storage: Storag
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Smart Context MCP — Universal Dashboard</title>
-        <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧠</text></svg>">
+        <link rel="icon" href="${owlSvg}">
         <style>
           :root {
             --bg-color: #0b0f19;
@@ -174,6 +180,15 @@ export function startDashboardServer(config: SmartContextConfig, storage: Storag
             margin-bottom: 2rem;
             border-bottom: 1px solid var(--border);
             padding-bottom: 1rem;
+          }
+          .brand-title {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+          }
+          .brand-icon {
+            width: 42px;
+            height: 42px;
           }
           h1 {
             color: var(--primary);
@@ -442,6 +457,19 @@ export function startDashboardServer(config: SmartContextConfig, storage: Storag
             cursor: pointer;
             font-size: 0.9rem;
           }
+          .btn-secondary {
+            background: rgba(56, 189, 248, 0.15);
+            color: var(--primary);
+            font-weight: 600;
+            border: 1px solid var(--primary);
+            padding: 0.75rem 1.25rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+          }
+          .btn-secondary:hover {
+            background: rgba(56, 189, 248, 0.3);
+          }
           .guide-section {
             margin-bottom: 1.25rem;
           }
@@ -483,19 +511,21 @@ export function startDashboardServer(config: SmartContextConfig, storage: Storag
       <body>
         <div class="container">
           <header>
-            <div>
-              <h1>🧠 Smart Context MCP Server</h1>
-              <div class="subtitle">Universal Context Engine & Local SQLite Explorer</div>
+            <div class="brand-title">
+              <img class="brand-icon" src="${owlSvg}" alt="Smart Context Owl Mascot" />
+              <div>
+                <h1>Smart Context MCP Server</h1>
+                <div class="subtitle">Universal Context Engine & Local SQLite Explorer</div>
+              </div>
             </div>
             <div class="header-actions">
               <div class="project-select-box">
                 <label>Project:</label>
                 <select id="projectSelect" onchange="onProjectChange()">
-                  <option value="all">All Projects</option>
+                  <option value="all" selected>All Projects</option>
                 </select>
               </div>
-              <button class="header-btn" onclick="openModal('testModal')">⚡ Test Connection</button>
-              <button class="header-btn" onclick="openModal('settingsModal')">⚙️ Settings</button>
+              <button class="header-btn" onclick="openModal('settingsModal')">⚙️ Settings & AI Setup</button>
               <button class="header-btn" onclick="openModal('guideModal')">❓ Guide</button>
               <span class="badge">Online</span>
             </div>
@@ -521,7 +551,7 @@ export function startDashboardServer(config: SmartContextConfig, storage: Storag
               <div class="stat-val" id="totalPrompts">-</div>
               <div class="stat-lbl">
                 Filtered Prompts
-                <span class="tooltip-icon" data-tooltip="Number of user prompts processed by Low AI intent analyzer to extract relevant code context. Increments when AI Agent calls MCP get_smart_context or via Test Low AI.">?</span>
+                <span class="tooltip-icon" data-tooltip="Number of user prompts processed by Low AI intent analyzer to extract relevant code context. Increments when AI Agent calls MCP get_smart_context or via Test Connection.">?</span>
               </div>
             </div>
             <div class="stat-card">
@@ -579,28 +609,7 @@ export function startDashboardServer(config: SmartContextConfig, storage: Storag
           </div>
         </div>
 
-        <!-- ⚡ Test Connection Modal Dialog -->
-        <div class="modal-overlay" id="testModal">
-          <div class="modal-card">
-            <div class="modal-header">
-              <h2>⚡ Test Low AI Provider Connection & Simulation</h2>
-              <button class="close-btn" onclick="closeModal('testModal')">&times;</button>
-            </div>
-            <form id="testForm">
-              <div class="form-group">
-                <label>Test Sample Prompt <span class="tooltip-icon" data-tooltip="Tests connection to your configured Low AI API (Ollama/Groq/Claude/Gemini) and verifies prompt intent extraction & live token recording.">?</span></label>
-                <textarea id="testPromptInput" rows="3" placeholder="e.g. Refactor database connection pool and fix SQL query performance in src/storage/db.ts"></textarea>
-              </div>
-              <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1rem;">
-                <button type="button" class="tab-btn" onclick="closeModal('testModal')">Cancel</button>
-                <button type="submit" class="btn-primary">Test Connection & Analyze</button>
-              </div>
-            </form>
-            <div id="testResultBox" class="result-box" style="display: none;"></div>
-          </div>
-        </div>
-
-        <!-- ⚙️ Settings Modal Dialog -->
+        <!-- ⚙️ Settings & Integrated Connection Test Modal Dialog -->
         <div class="modal-overlay" id="settingsModal">
           <div class="modal-card">
             <div class="modal-header">
@@ -619,21 +628,25 @@ export function startDashboardServer(config: SmartContextConfig, storage: Storag
               </div>
               <div class="form-group">
                 <label>Low AI Model Name <span class="tooltip-icon" data-tooltip="The model identifier name to invoke for prompt intent analysis (e.g. nemotron-3-super:cloud, llama-3.3-70b-versatile, claude-3-5-sonnet).">?</span></label>
-                <input type="text" id="lowAiModel" placeholder="nemotron-3-super:cloud / llama-3.3-70b-versatile" />
+                <input type="text" id="lowAiModel" placeholder="e.g. nemotron-3-super:cloud, llama-3.3-70b-versatile" />
               </div>
               <div class="form-group">
                 <label>Low AI Base URL <span class="tooltip-icon" data-tooltip="Base HTTP endpoint URL for the Low AI API service (e.g. http://localhost:11434 for local Ollama, https://api.groq.com/openai for Groq).">?</span></label>
-                <input type="text" id="lowAiBaseUrl" placeholder="http://localhost:11434 or https://api.anthropic.com" />
+                <input type="text" id="lowAiBaseUrl" placeholder="e.g. http://localhost:11434 or https://api.groq.com/openai" />
               </div>
               <div class="form-group">
                 <label>Low AI Auth Token / API Key <span class="tooltip-icon" data-tooltip="Authorization Bearer token or API Key required to authenticate requests to the Low AI endpoint.">?</span></label>
                 <input type="password" id="lowAiApiKey" placeholder="ollama / gsk_... / sk-..." />
               </div>
-              <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem;">
-                <button type="button" class="tab-btn" onclick="closeModal('settingsModal')">Cancel</button>
-                <button type="submit" class="btn-primary">Save Settings</button>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem;">
+                <button type="button" class="btn-secondary" onclick="testConnectionFromSettings()">⚡ Test Connection</button>
+                <div style="display: flex; gap: 0.75rem;">
+                  <button type="button" class="tab-btn" onclick="closeModal('settingsModal')">Cancel</button>
+                  <button type="submit" class="btn-primary">Save Settings</button>
+                </div>
               </div>
             </form>
+            <div id="settingsTestResult" class="result-box" style="display: none;"></div>
           </div>
         </div>
 
@@ -666,7 +679,7 @@ export function startDashboardServer(config: SmartContextConfig, storage: Storag
 
             <div class="guide-section">
               <h3>🔌 MCP Client Configuration</h3>
-              <p>Add the following server config to your AI Client (<code>mcp_settings.json</code>):</p>
+              <p>Add the following server config to your AI Client (<code>mcp_settings.json</code> or VS Code <code>mcp.json</code>):</p>
               <pre><code>{
   "mcpServers": {
     "smart-context": {
@@ -684,7 +697,7 @@ export function startDashboardServer(config: SmartContextConfig, storage: Storag
         </div>
 
         <script>
-          let currentProject = 'all';
+          var currentProject = 'all';
 
           function openModal(id) {
             document.getElementById(id).classList.add('active');
@@ -695,76 +708,93 @@ export function startDashboardServer(config: SmartContextConfig, storage: Storag
           }
 
           async function loadProjects() {
-            const res = await fetch('/api/projects');
-            const projects = await res.json();
-            const select = document.getElementById('projectSelect');
-            select.innerHTML = '<option value="all">All Projects</option>';
-            projects.forEach(p => {
-              const opt = document.createElement('option');
-              opt.value = p;
-              opt.innerText = p;
-              select.appendChild(opt);
-            });
-            if (projects.length > 0) {
-              select.value = projects[0];
-              currentProject = projects[0];
+            try {
+              const res = await fetch('/api/projects');
+              const projects = await res.json();
+              const select = document.getElementById('projectSelect');
+              select.innerHTML = '<option value="all" selected>All Projects</option>';
+              projects.forEach(function(p) {
+                const opt = document.createElement('option');
+                opt.value = p;
+                opt.innerText = p;
+                select.appendChild(opt);
+              });
+              currentProject = 'all';
+            } catch (err) {
+              console.error('Error loading projects:', err);
             }
           }
 
           async function loadStats() {
-            const res = await fetch('/api/stats?project=' + encodeURIComponent(currentProject));
-            const data = await res.json();
-            document.getElementById('fileCount').innerText = data.fileCount;
-            document.getElementById('symbolCount').innerText = data.symbolCount;
-            document.getElementById('totalPrompts').innerText = data.totalPrompts;
-            document.getElementById('totalTokens').innerText = data.totalTokens;
+            try {
+              const res = await fetch('/api/stats?project=' + encodeURIComponent(currentProject));
+              const data = await res.json();
+              document.getElementById('fileCount').innerText = data.fileCount || 0;
+              document.getElementById('symbolCount').innerText = data.symbolCount || 0;
+              document.getElementById('totalPrompts').innerText = data.totalPrompts || 0;
+              document.getElementById('totalTokens').innerText = data.totalTokens || 0;
+            } catch (err) {
+              console.error('Error loading stats:', err);
+            }
           }
 
           async function loadConfig() {
-            const res = await fetch('/api/config');
-            const data = await res.json();
-            document.getElementById('lowAiProvider').value = data.lowAiProvider || 'anthropic';
-            document.getElementById('lowAiModel').value = data.lowAiModel || '';
-            document.getElementById('lowAiBaseUrl').value = data.lowAiBaseUrl || '';
-            document.getElementById('lowAiApiKey').value = data.lowAiApiKey || '';
+            try {
+              const res = await fetch('/api/config');
+              const data = await res.json();
+              document.getElementById('lowAiProvider').value = data.lowAiProvider || 'anthropic';
+              document.getElementById('lowAiModel').value = data.lowAiModel || '';
+              document.getElementById('lowAiBaseUrl').value = data.lowAiBaseUrl || '';
+              document.getElementById('lowAiApiKey').value = data.lowAiApiKey || '';
+            } catch (err) {
+              console.error('Error loading config:', err);
+            }
           }
 
           async function loadFiles() {
-            const res = await fetch('/api/cache/files?project=' + encodeURIComponent(currentProject));
-            const files = await res.json();
-            const tbody = document.getElementById('filesTableBody');
-            if (files.length === 0) {
-              tbody.innerHTML = '<tr><td colspan="5">No cached files found. Call MCP tool scan_workspace.</td></tr>';
-              return;
+            try {
+              const res = await fetch('/api/cache/files?project=' + encodeURIComponent(currentProject));
+              const files = await res.json();
+              const tbody = document.getElementById('filesTableBody');
+              if (files.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5">No cached files found. Call MCP tool scan_workspace.</td></tr>';
+                return;
+              }
+              tbody.innerHTML = files.map(function(f) {
+                return '<tr>' +
+                  '<td>' + f.id + '</td>' +
+                  '<td><span style="color: var(--accent); font-weight:600">' + (f.project_name || 'smart-context-mcp') + '</span></td>' +
+                  '<td><code>' + f.file_path + '</code></td>' +
+                  '<td>' + f.language + '</td>' +
+                  '<td><b>' + f.symbol_count + '</b></td>' +
+                '</tr>';
+              }).join('');
+            } catch (err) {
+              console.error('Error loading files:', err);
             }
-            tbody.innerHTML = files.map(f => \`
-              <tr>
-                <td>\${f.id}</td>
-                <td><span style="color: var(--accent); font-weight:600">\${f.project_name || 'smart-context-mcp'}</span></td>
-                <td><code>\${f.file_path}</code></td>
-                <td>\${f.language}</td>
-                <td><b>\${f.symbol_count}</b></td>
-              </tr>
-            \`).join('');
           }
 
           async function loadSymbols() {
-            const res = await fetch('/api/cache/symbols?project=' + encodeURIComponent(currentProject));
-            const symbols = await res.json();
-            const tbody = document.getElementById('symbolsTableBody');
-            if (symbols.length === 0) {
-              tbody.innerHTML = '<tr><td colspan="5">No AST symbols found in cache.</td></tr>';
-              return;
+            try {
+              const res = await fetch('/api/cache/symbols?project=' + encodeURIComponent(currentProject));
+              const symbols = await res.json();
+              const tbody = document.getElementById('symbolsTableBody');
+              if (symbols.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5">No AST symbols found in cache.</td></tr>';
+                return;
+              }
+              tbody.innerHTML = symbols.map(function(s) {
+                return '<tr>' +
+                  '<td><b>' + s.name + '</b></td>' +
+                  '<td><span style="color: var(--primary)">[' + s.kind + ']</span></td>' +
+                  '<td>L' + s.start_line + '</td>' +
+                  '<td><code>' + s.file_path + '</code></td>' +
+                  '<td><span style="color: var(--accent)">' + (s.project_name || 'smart-context-mcp') + '</span></td>' +
+                '</tr>';
+              }).join('');
+            } catch (err) {
+              console.error('Error loading symbols:', err);
             }
-            tbody.innerHTML = symbols.map(s => \`
-              <tr>
-                <td><b>\${s.name}</b></td>
-                <td><span style="color: var(--primary)">[\${s.kind}]</span></td>
-                <td>L\${s.start_line}</td>
-                <td><code>\${s.file_path}</code></td>
-                <td><span style="color: var(--accent)">\${s.project_name || 'smart-context-mcp'}</span></td>
-              </tr>
-            \`).join('');
           }
 
           function onProjectChange() {
@@ -788,7 +818,44 @@ export function startDashboardServer(config: SmartContextConfig, storage: Storag
             }
           }
 
-          document.getElementById('configForm').addEventListener('submit', async (e) => {
+          async function testConnectionFromSettings() {
+            const provider = document.getElementById('lowAiProvider').value;
+            const model = document.getElementById('lowAiModel').value;
+            const baseUrl = document.getElementById('lowAiBaseUrl').value;
+            const apiKey = document.getElementById('lowAiApiKey').value;
+
+            const resultBox = document.getElementById('settingsTestResult');
+            resultBox.style.display = 'block';
+            resultBox.innerText = '⚡ Testing connection to Low AI endpoint (' + (baseUrl || 'default') + ')...';
+
+            try {
+              const res = await fetch('/api/test-prompt', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  prompt: 'Test Low AI provider connection and keyword extraction',
+                  project: currentProject === 'all' ? 'smart-context-mcp' : currentProject,
+                  configOverride: {
+                    lowAiProvider: provider,
+                    lowAiModel: model,
+                    lowAiBaseUrl: baseUrl,
+                    lowAiApiKey: apiKey
+                  }
+                })
+              });
+              const data = await res.json();
+              if (data.success) {
+                resultBox.innerText = '✅ Connection Successful!\nSummary: "' + data.result.summary + '"\nKeywords: ' + JSON.stringify(data.result.keywords) + '\nTokens Recorded: ' + data.tokensUsed;
+                loadStats();
+              } else {
+                resultBox.innerText = '❌ Connection Error: ' + data.error;
+              }
+            } catch (err) {
+              resultBox.innerText = '❌ Request failed: ' + err.message;
+            }
+          }
+
+          document.getElementById('configForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             const provider = document.getElementById('lowAiProvider').value;
             const model = document.getElementById('lowAiModel').value;
@@ -809,34 +876,6 @@ export function startDashboardServer(config: SmartContextConfig, storage: Storag
             alert('Configuration saved successfully!');
             closeModal('settingsModal');
             loadConfig();
-          });
-
-          document.getElementById('testForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const prompt = document.getElementById('testPromptInput').value;
-            const resultBox = document.getElementById('testResultBox');
-            resultBox.style.display = 'block';
-            resultBox.innerText = 'Analyzing prompt with Low AI model...';
-
-            try {
-              const res = await fetch('/api/test-prompt', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  prompt,
-                  project: currentProject === 'all' ? 'smart-context-mcp' : currentProject
-                })
-              });
-              const data = await res.json();
-              if (data.success) {
-                resultBox.innerText = '✅ Analysis Result:\n' + JSON.stringify(data.result, null, 2) + '\n\nTokens Used: ' + data.tokensUsed;
-                loadStats();
-              } else {
-                resultBox.innerText = '❌ Error: ' + data.error;
-              }
-            } catch (err) {
-              resultBox.innerText = '❌ Request failed: ' + err.message;
-            }
           });
 
           async function init() {

@@ -242,6 +242,16 @@ export class SmartContextMcpServer {
     const intentResult = await analyzeIntent(prompt, this.config);
     const gitDelta = getGitDelta(workspacePath);
 
+    const estimatedTokens = Math.ceil((prompt.length + JSON.stringify(intentResult).length) / 4) + 15;
+    const projectName = path.basename(workspacePath) || 'smart-context-mcp';
+    this.storage.recordMetric(
+      projectName,
+      prompt,
+      this.config.lowAiModel || '',
+      estimatedTokens,
+      intentResult.keywords ? intentResult.keywords.length : 0
+    );
+
     let output = `## Context được Tối ưu hóa bởi Smart Context MCP\n\n`;
     output += `### 🎯 Ý định Prompt: "${prompt}"\n`;
     output += `🤖 **Phân tích Low AI (${this.config.lowAiModel}):** ${intentResult.summary}\n\n`;

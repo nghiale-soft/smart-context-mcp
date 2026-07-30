@@ -1,4 +1,4 @@
-# 🧠 Smart Context MCP Server
+# 🦉 Smart Context MCP Server
 
 **Smart Context MCP** is a local Model Context Protocol (MCP) server acting as a **Universal Context Engine** for AI Coding Agents (Cline, Roo Code, Claude Code, Cursor, Continue.dev, Codex, etc.).
 
