@@ -1,11 +1,6 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import {
-  CallToolRequestSchema,
-  ListToolsRequestSchema,
-  ListPromptsRequestSchema,
-  GetPromptRequestSchema
-} from '@modelcontextprotocol/sdk/types.js';
+import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 
 import { StorageManager } from '../storage/db.js';
 import { getGitDelta } from '../scanner/git.js';
@@ -33,7 +28,6 @@ export class SmartContextMcpServer {
       {
         capabilities: {
           tools: {},
-          prompts: {},
         },
       }
     );
@@ -42,49 +36,6 @@ export class SmartContextMcpServer {
   }
 
   private setupHandlers() {
-    // List available MCP Prompts (Slash Commands)
-    this.server.setRequestHandler(ListPromptsRequestSchema, async () => {
-      return {
-        prompts: [
-          {
-            name: 'smart_context',
-            description: 'Tự động phân tích intent bằng Low AI, lấy Git Delta và trích xuất AST symbol làm ngữ cảnh tối ưu.',
-            arguments: [
-              {
-                name: 'prompt',
-                description: 'Câu hỏi hoặc yêu cầu lập trình của bạn.',
-                required: true,
-              },
-            ],
-          },
-        ],
-      };
-    });
-
-    // Handle Get Prompt Request (When client calls slash command)
-    this.server.setRequestHandler(GetPromptRequestSchema, async (request) => {
-      const { name, arguments: args } = request.params;
-      if (name === 'smart_context') {
-        const userPrompt = (args?.prompt as string) || '';
-        const workspacePath = process.cwd();
-        const context = await this.buildOptimizedContext(userPrompt, workspacePath);
-
-        return {
-          description: `Smart Context optimized prompt: "${userPrompt}"`,
-          messages: [
-            {
-              role: 'user',
-              content: {
-                type: 'text',
-                text: `${context}\n\nYêu cầu chính:\n${userPrompt}`,
-              },
-            },
-          ],
-        };
-      }
-      throw new Error(`Prompt not found: ${name}`);
-    });
-
     // List available MCP Tools
     this.server.setRequestHandler(ListToolsRequestSchema, async () => {
       return {
