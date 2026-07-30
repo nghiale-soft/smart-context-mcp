@@ -15,3 +15,6 @@ dist/
 
 # AI Docs
 docs/
+
+# Release
+release/smart-context-mcp-release/
