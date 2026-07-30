@@ -9,6 +9,7 @@
     "dev": "tsx src/index.ts",
     "start": "node dist/index.js",
     "release": "bash scripts/release.sh",
+    "scan": "tsx scripts/scan-cli.ts",
     "lint": "tsc --noEmit"
   },
   "keywords": [
