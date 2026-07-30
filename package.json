@@ -9,6 +9,7 @@
     "dev": "tsx src/index.ts",
     "start": "node dist/index.js",
     "release": "bash scripts/release.sh",
+    "test": "tsx test/test-cli.ts",
     "lint": "tsc --noEmit"
   },
   "keywords": [
